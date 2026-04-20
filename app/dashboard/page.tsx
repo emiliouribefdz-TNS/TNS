@@ -26,31 +26,53 @@ const supabase = createClient(
 const prendas = ['Camiseta', 'Jean', 'Blusa', 'Vestido', 'Chaqueta', 'Pantalón', 'Falda']
 const tallas = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const temporadas = ['Verano 2025', 'Otoño 2025', 'Invierno 2025', 'Primavera 2026']
-const COLORS = ['#FF6B8A', '#7F77DD', '#FFB347', '#4ECDC4', '#95E1D3', '#F38181', '#A8E6CF']
+
+/* Tennis brand palette */
+const NAVY = '#0D1B2A'
+const NAVY_LIGHT = '#1B2A4A'
+const NAVY_MID = '#15233B'
+const GOLD = '#C9A84C'
+const ACCENT = '#E63946'
+const WHITE = '#FFFFFF'
+const OFFWHITE = '#F5F6F8'
+const GRAY50 = '#F8F9FA'
+const GRAY100 = '#EEF0F2'
+const GRAY200 = '#DEE2E6'
+const GRAY400 = '#ADB5BD'
+const GRAY600 = '#6C757D'
+const GRAY800 = '#343A40'
+
+const BAR_COLORS = ['#1B2A4A', '#C9A84C', '#E63946', '#2D9F6F', '#6C757D', '#4A90D9', '#D4A373']
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
-  { id: 'ventas', label: 'Ventas', icon: '◉' },
-  { id: 'referencias', label: 'Referencias', icon: '▣' },
-  { id: 'ia', label: 'Análisis IA', icon: '◆' },
+  { id: 'dashboard', label: 'Dashboard', icon: 'D' },
+  { id: 'ventas', label: 'Ventas', icon: 'V' },
+  { id: 'referencias', label: 'Referencias', icon: 'R' },
+  { id: 'ia', label: 'Análisis IA', icon: 'AI' },
 ] as const
 
 const inputStyle: CSSProperties = {
   width: '100%',
-  padding: '9px 12px',
-  borderRadius: '10px',
-  border: '1px solid #e8e8e8',
+  padding: '10px 12px',
+  borderRadius: '8px',
+  border: `1.5px solid ${GRAY200}`,
   fontSize: '13px',
-  color: '#111',
-  background: '#fafafa',
+  color: NAVY,
+  background: GRAY50,
   outline: 'none',
   boxSizing: 'border-box',
+  fontFamily: "'Helvetica Neue', sans-serif",
 }
 
 const cardStyle: CSSProperties = {
-  background: '#fff',
-  borderRadius: '20px',
+  background: WHITE,
+  borderRadius: '14px',
   padding: '1.5rem',
+  border: `1px solid ${GRAY100}`,
+}
+
+function TennisLogoSmall({ width = 28 }: { width?: number }) {
+  return <img src="/tns-logo-white.svg" alt="TNS" width={width} style={{ objectFit: 'contain' }} />
 }
 
 function getSectionTitle(section: string) {
@@ -58,6 +80,13 @@ function getSectionTitle(section: string) {
   if (section === 'referencias') return 'Referencias'
   if (section === 'ia') return 'Análisis IA'
   return 'Dashboard'
+}
+
+function getSectionSubtitle(section: string) {
+  if (section === 'ventas') return 'Registra y consulta las ventas de tu colección'
+  if (section === 'referencias') return 'Catálogo de referencias importadas'
+  if (section === 'ia') return 'Recomendaciones inteligentes con Claude'
+  return 'Resumen general de tu operación'
 }
 
 export default function Dashboard() {
@@ -290,131 +319,198 @@ export default function Dashboard() {
     .filter((row) => row.total > 0)
   const maxVal = Math.max(...porTipo.map((row) => row.total), 1)
 
+  const btnPrimary: CSSProperties = {
+    background: NAVY,
+    color: WHITE,
+    border: 'none',
+    borderRadius: '8px',
+    padding: '10px 20px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    letterSpacing: '0.2px',
+    fontFamily: "'Helvetica Neue', sans-serif",
+  }
+
+  const btnSecondary: CSSProperties = {
+    background: GRAY100,
+    color: GRAY600,
+    border: 'none',
+    borderRadius: '8px',
+    padding: '10px 20px',
+    fontSize: '13px',
+    cursor: 'pointer',
+    fontFamily: "'Helvetica Neue', sans-serif",
+  }
+
+  const thStyle: CSSProperties = {
+    textAlign: 'left',
+    padding: '10px 14px',
+    borderBottom: `1px solid ${GRAY100}`,
+    color: GRAY400,
+    fontWeight: '500',
+    fontSize: '11px',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+  }
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f2f2ef', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: OFFWHITE, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+      {/* Sidebar */}
       <div
         style={{
-          width: '72px',
-          background: '#1a1a2e',
+          width: '220px',
+          background: NAVY,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
           padding: '1.5rem 0',
-          gap: '8px',
         }}
       >
-        <div
-          style={{
-            width: '36px',
-            height: '36px',
-            background: '#fff',
+        {/* Logo area */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '0 1.25rem',
+          marginBottom: '2rem',
+        }}>
+          <div style={{
+            width: '38px',
+            height: '38px',
+            background: 'rgba(255,255,255,0.1)',
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <span style={{ fontSize: '10px', fontWeight: '700', color: '#111', letterSpacing: '1px' }}>TNS</span>
+          }}>
+            <TennisLogoSmall width={24} />
+          </div>
+          <div>
+            <div style={{ color: WHITE, fontSize: '15px', fontWeight: '700', letterSpacing: '2px' }}>TENNIS</div>
+            <div style={{ color: GOLD, fontSize: '10px', fontWeight: '500', letterSpacing: '1px' }}>FASHION AI</div>
+          </div>
         </div>
 
+        {/* Nav section label */}
+        <div style={{
+          padding: '0 1.25rem',
+          marginBottom: '8px',
+          fontSize: '10px',
+          fontWeight: '600',
+          color: 'rgba(255,255,255,0.25)',
+          letterSpacing: '1.5px',
+          textTransform: 'uppercase',
+        }}>
+          Menu
+        </div>
+
+        {/* Nav items */}
         {navItems.map((item) => (
           <div
             key={item.id}
             onClick={() => setSeccion(item.id)}
-            title={item.label}
             style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '11px 1.25rem',
+              cursor: 'pointer',
+              background: seccion === item.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+              borderLeft: seccion === item.id ? `3px solid ${GOLD}` : '3px solid transparent',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: seccion === item.id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.05)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
-              background: seccion === item.id ? 'rgba(255,255,255,0.15)' : 'transparent',
-              color: seccion === item.id ? '#fff' : '#555',
-              fontSize: '18px',
-            }}
-          >
-            {item.icon}
+              color: seccion === item.id ? GOLD : 'rgba(255,255,255,0.4)',
+              fontSize: '11px',
+              fontWeight: '700',
+              letterSpacing: '0.5px',
+            }}>
+              {item.icon}
+            </div>
+            <span style={{
+              color: seccion === item.id ? WHITE : 'rgba(255,255,255,0.5)',
+              fontSize: '13px',
+              fontWeight: seccion === item.id ? '600' : '400',
+            }}>
+              {item.label}
+            </span>
           </div>
         ))}
 
-        <div style={{ marginTop: 'auto' }}>
+        {/* Bottom section */}
+        <div style={{ marginTop: 'auto', padding: '0 1.25rem' }}>
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            paddingTop: '1rem',
+            marginBottom: '0.5rem',
+          }}>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>
+              {user?.email}
+            </div>
+          </div>
           <div
             onClick={cerrarSesion}
-            title="Cerrar sesión"
             style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: '10px',
+              padding: '10px 0',
               cursor: 'pointer',
-              color: '#555',
-              fontSize: '18px',
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '13px',
+              transition: 'color 0.15s',
             }}
           >
-            ⏻
+            <span style={{ fontSize: '16px' }}>&#x2190;</span>
+            Cerrar sesión
           </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+      {/* Main content */}
+      <div style={{ flex: 1, padding: '2rem 2.5rem', overflowY: 'auto' }}>
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: '700', margin: '0 0 2px', color: '#111' }}>{getSectionTitle(seccion)}</h1>
-            <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>{user?.email}</p>
+            <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px', color: NAVY, letterSpacing: '-0.3px' }}>
+              {getSectionTitle(seccion)}
+            </h1>
+            <p style={{ fontSize: '13px', color: GRAY400, margin: 0 }}>
+              {getSectionSubtitle(seccion)}
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {seccion === 'ventas' && (
-              <button
-                onClick={() => setShowForm(!showForm)}
-                style={{
-                  background: '#1a1a2e',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '10px 20px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                }}
-              >
+              <button onClick={() => setShowForm(!showForm)} style={btnPrimary}>
                 + Nueva venta
               </button>
             )}
 
             {seccion === 'referencias' && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  background: '#1a1a2e',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '10px 20px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                }}
-              >
+              <button onClick={() => fileInputRef.current?.click()} style={btnPrimary}>
                 + Importar Excel
               </button>
             )}
 
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: '#FF6B8A',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: NAVY,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
+                color: WHITE,
                 fontWeight: '700',
                 fontSize: '13px',
               }}
@@ -426,56 +522,68 @@ export default function Dashboard() {
 
         <input ref={fileInputRef} type="file" accept=".xlsx,.csv" style={{ display: 'none' }} onChange={onFileSelected} />
 
+        {/* DASHBOARD SECTION */}
         {seccion === 'dashboard' && (
           <div>
+            {/* KPI cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '1.5rem' }}>
-              <div style={{ background: 'linear-gradient(135deg,#FF6B8A,#ff8fab)', borderRadius: '20px', padding: '1.5rem', color: '#fff' }}>
-                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '8px' }}>Total unidades vendidas</div>
+              <div style={{
+                background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
+                borderRadius: '14px',
+                padding: '1.5rem',
+                color: WHITE,
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(201,168,76,0.1)' }} />
+                <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Unidades vendidas</div>
                 <div style={{ fontSize: '32px', fontWeight: '700' }}>{totalUnidades.toLocaleString()}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>{ventas.length} ventas registradas</div>
+                <div style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>{ventas.length} ventas registradas</div>
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>Ingresos totales</div>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#111' }}>${(totalIngresos / 1000000).toFixed(1)}M</div>
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>COP estimado</div>
+                <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Ingresos totales</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: NAVY }}>${(totalIngresos / 1000000).toFixed(1)}M</div>
+                <div style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>COP estimado</div>
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>Referencias en catálogo</div>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#111' }}>{referencias.length}</div>
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>Importadas por Excel o CSV</div>
+                <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Referencias</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: NAVY }}>{referencias.length}</div>
+                <div style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>En catálogo activo</div>
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>Prenda estrella</div>
-                <div style={{ fontSize: '22px', fontWeight: '700', color: '#111' }}>{topPrenda ? topPrenda.tipo_prenda : '-'}</div>
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Prenda estrella</div>
+                <div style={{ fontSize: '22px', fontWeight: '700', color: NAVY }}>{topPrenda ? topPrenda.tipo_prenda : '-'}</div>
+                <div style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>
                   {topPrenda ? `${topPrenda.unidades} un. · ${topPrenda.color}` : 'Sin datos aún'}
                 </div>
               </div>
             </div>
 
+            {/* Charts row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={cardStyle}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '1.25rem' }}>Unidades por prenda</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1.25rem' }}>Unidades por prenda</div>
                 {porTipo.length === 0 ? (
-                  <p style={{ color: '#ccc', fontSize: '13px' }}>Sin datos aún</p>
+                  <p style={{ color: GRAY200, fontSize: '13px' }}>Sin datos aún</p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     {porTipo.sort((a, b) => b.total - a.total).map((row, index) => (
                       <div key={row.nombre}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                          <span style={{ color: '#555' }}>{row.nombre}</span>
-                          <span style={{ fontWeight: '600', color: '#111' }}>{row.total}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                          <span style={{ color: GRAY600 }}>{row.nombre}</span>
+                          <span style={{ fontWeight: '600', color: NAVY }}>{row.total}</span>
                         </div>
-                        <div style={{ height: '8px', background: '#f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ height: '6px', background: GRAY100, borderRadius: '3px', overflow: 'hidden' }}>
                           <div
                             style={{
                               height: '100%',
                               width: `${(row.total / maxVal) * 100}%`,
-                              background: COLORS[index % COLORS.length],
-                              borderRadius: '4px',
+                              background: BAR_COLORS[index % BAR_COLORS.length],
+                              borderRadius: '3px',
+                              transition: 'width 0.5s ease',
                             }}
                           />
                         </div>
@@ -486,9 +594,9 @@ export default function Dashboard() {
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '1.25rem' }}>Referencias recientes</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1.25rem' }}>Referencias recientes</div>
                 {referencias.length === 0 ? (
-                  <p style={{ color: '#ccc', fontSize: '13px' }}>Aún no has importado referencias.</p>
+                  <p style={{ color: GRAY200, fontSize: '13px' }}>Aún no has importado referencias.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {referencias.slice(0, 5).map((referencia, index) => (
@@ -497,23 +605,25 @@ export default function Dashboard() {
                           style={{
                             width: '36px',
                             height: '36px',
-                            borderRadius: '10px',
-                            background: COLORS[index % COLORS.length] + '33',
+                            borderRadius: '8px',
+                            background: index === 0 ? `${GOLD}22` : `${NAVY}0A`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '16px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            color: index === 0 ? GOLD : NAVY_LIGHT,
                           }}
                         >
-                          ▣
+                          {referencia.reference_code?.slice(0, 2) ?? 'R'}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#111' }}>{referencia.reference_code}</div>
-                          <div style={{ fontSize: '11px', color: '#999' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: NAVY }}>{referencia.reference_code}</div>
+                          <div style={{ fontSize: '11px', color: GRAY400 }}>
                             {referencia.nombre ?? referencia.tipo_prenda ?? 'Sin nombre'} {referencia.color ? `· ${referencia.color}` : ''}
                           </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#999' }}>{referencia.temporada ?? 'Sin temporada'}</div>
+                        <div style={{ fontSize: '11px', color: GRAY400 }}>{referencia.temporada ?? ''}</div>
                       </div>
                     ))}
                   </div>
@@ -523,11 +633,12 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* VENTAS SECTION */}
         {seccion === 'ventas' && (
           <div>
             {showForm && (
               <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '1rem' }}>Nueva venta</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Nueva venta</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '1rem' }}>
                   <select value={tipo} onChange={(event) => setTipo(event.target.value)} style={inputStyle}>
                     {prendas.map((prenda) => (
@@ -550,73 +661,59 @@ export default function Dashboard() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={registrarVenta}
-                    style={{ background: '#1a1a2e', color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    onClick={() => setShowForm(false)}
-                    style={{ background: '#f0f0f0', color: '#555', border: 'none', borderRadius: '10px', padding: '9px 20px', fontSize: '13px', cursor: 'pointer' }}
-                  >
-                    Cancelar
-                  </button>
+                  <button onClick={registrarVenta} style={btnPrimary}>Guardar</button>
+                  <button onClick={() => setShowForm(false)} style={btnSecondary}>Cancelar</button>
                 </div>
               </div>
             )}
 
             <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '1rem' }}>Todas las ventas</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Todas las ventas</div>
               {ventas.length === 0 ? (
-                <p style={{ color: '#ccc', fontSize: '13px' }}>No hay ventas registradas aún</p>
+                <p style={{ color: GRAY200, fontSize: '13px' }}>No hay ventas registradas aún</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
                       <tr>
                         {['Prenda', 'Color', 'Talla', 'Unidades', 'Precio', 'Temporada', 'Ingresos'].map((header) => (
-                          <th
-                            key={header}
-                            style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid #f0f0f0', color: '#aaa', fontWeight: '500', fontSize: '11px' }}
-                          >
-                            {header}
-                          </th>
+                          <th key={header} style={thStyle}>{header}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {ventas.map((venta, index) => (
-                        <tr key={venta.id} style={{ background: index % 2 === 0 ? '#fff' : '#fafafa' }}>
-                          <td style={{ padding: '12px', color: '#111', fontWeight: '500' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <tr key={venta.id} style={{ background: index % 2 === 0 ? WHITE : GRAY50 }}>
+                          <td style={{ padding: '12px 14px', color: NAVY, fontWeight: '500' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div
                                 style={{
-                                  width: '28px',
-                                  height: '28px',
+                                  width: '30px',
+                                  height: '30px',
                                   borderRadius: '8px',
-                                  background: COLORS[index % COLORS.length] + '33',
+                                  background: `${NAVY}0A`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '13px',
+                                  fontSize: '12px',
+                                  color: NAVY_LIGHT,
                                 }}
                               >
-                                👗
+                                {venta.tipo_prenda[0]}
                               </div>
                               {venta.tipo_prenda}
                             </div>
                           </td>
-                          <td style={{ padding: '12px', color: '#555' }}>{venta.color}</td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ background: '#f0f0f0', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', color: '#555' }}>{venta.talla}</span>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{venta.color}</td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span style={{ background: GRAY100, padding: '3px 10px', borderRadius: '6px', fontSize: '12px', color: GRAY600, fontWeight: '500' }}>{venta.talla}</span>
                           </td>
-                          <td style={{ padding: '12px', fontWeight: '600', color: '#111' }}>{venta.unidades}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>${venta.precio.toLocaleString()}</td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ background: '#EEEDFE', color: '#534AB7', fontSize: '11px', padding: '4px 10px', borderRadius: '20px' }}>{venta.temporada}</span>
+                          <td style={{ padding: '12px 14px', fontWeight: '600', color: NAVY }}>{venta.unidades}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>${venta.precio.toLocaleString()}</td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span style={{ background: `${NAVY}0D`, color: NAVY_LIGHT, fontSize: '11px', padding: '4px 12px', borderRadius: '20px', fontWeight: '500' }}>{venta.temporada}</span>
                           </td>
-                          <td style={{ padding: '12px', fontWeight: '600', color: '#FF6B8A' }}>${(venta.unidades * venta.precio).toLocaleString()}</td>
+                          <td style={{ padding: '12px 14px', fontWeight: '600', color: GOLD }}>${(venta.unidades * venta.precio).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -627,11 +724,12 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* REFERENCIAS SECTION */}
         {seccion === 'referencias' && (
           <div style={{ display: 'grid', gap: '16px' }}>
             <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>Importar catálogo desde Excel</div>
-              <div style={{ fontSize: '13px', color: '#999', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '4px' }}>Importar catálogo desde Excel</div>
+              <div style={{ fontSize: '13px', color: GRAY400, marginBottom: '1rem' }}>
                 Sube un archivo `.xlsx` o `.csv`. Usa `reference_code` como columna obligatoria. También puedes incluir `nombre`, `tipo`, `color`, `talla`, `precio`, `temporada`, `notas` e `image_url`.
               </div>
 
@@ -640,13 +738,7 @@ export default function Dashboard() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={previewLoading || commitLoading}
                   style={{
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '10px 18px',
-                    fontSize: '13px',
-                    fontWeight: '600',
+                    ...btnPrimary,
                     cursor: previewLoading || commitLoading ? 'not-allowed' : 'pointer',
                     opacity: previewLoading || commitLoading ? 0.6 : 1,
                   }}
@@ -655,25 +747,20 @@ export default function Dashboard() {
                 </button>
 
                 {(preview || importFileName || importMessage || importError) && (
-                  <button
-                    onClick={resetImportState}
-                    style={{ background: '#f0f0f0', color: '#555', border: 'none', borderRadius: '12px', padding: '10px 18px', fontSize: '13px', cursor: 'pointer' }}
-                  >
-                    Limpiar
-                  </button>
+                  <button onClick={resetImportState} style={btnSecondary}>Limpiar</button>
                 )}
               </div>
 
-              {importFileName && <div style={{ fontSize: '12px', color: '#777', marginBottom: '12px' }}>Archivo cargado: {importFileName}</div>}
-              {importMessage && <div style={{ background: '#eefbf3', border: '1px solid #c9efda', color: '#127148', borderRadius: '12px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importMessage}</div>}
-              {importError && <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', color: '#c83737', borderRadius: '12px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importError}</div>}
-              {referenciasError && <div style={{ background: '#fff8ea', border: '1px solid #ffe2ac', color: '#8a5b00', borderRadius: '12px', padding: '12px 14px', fontSize: '13px' }}>{referenciasError}</div>}
+              {importFileName && <div style={{ fontSize: '12px', color: GRAY600, marginBottom: '12px' }}>Archivo: {importFileName}</div>}
+              {importMessage && <div style={{ background: '#EEFBF3', border: '1px solid #c9efda', color: '#127148', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importMessage}</div>}
+              {importError && <div style={{ background: '#FFF0F1', border: '1px solid #FFCDD2', color: ACCENT, borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importError}</div>}
+              {referenciasError && <div style={{ background: '#FBF7ED', border: `1px solid ${GOLD}44`, color: '#8a5b00', borderRadius: '8px', padding: '12px 14px', fontSize: '13px' }}>{referenciasError}</div>}
             </div>
 
             {preview && (
               <div style={{ ...cardStyle, display: 'grid', gap: '16px' }}>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '8px' }}>Resumen de importación</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Resumen de importación</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                     {[
                       ['Total filas', preview.summary.totalRows],
@@ -682,47 +769,31 @@ export default function Dashboard() {
                       ['Referencias nuevas', preview.summary.newRows],
                       ['Conflictos', preview.summary.conflicts],
                     ].map(([label, value]) => (
-                      <div key={label} style={{ background: '#fafafa', borderRadius: '14px', padding: '14px' }}>
-                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '4px' }}>{label}</div>
-                        <div style={{ fontSize: '22px', fontWeight: '700', color: '#111' }}>{value}</div>
+                      <div key={label} style={{ background: GRAY50, borderRadius: '10px', padding: '14px', border: `1px solid ${GRAY100}` }}>
+                        <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</div>
+                        <div style={{ fontSize: '22px', fontWeight: '700', color: NAVY }}>{value}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ fontSize: '12px', color: '#777' }}>
+                <div style={{ fontSize: '12px', color: GRAY600 }}>
                   Columnas detectadas: {preview.columnsDetected.length > 0 ? preview.columnsDetected.join(', ') : 'No se detectaron encabezados'}
                 </div>
 
                 {preview.conflicts.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '8px' }}>Cómo resolver duplicados</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Cómo resolver duplicados</div>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => setConflictMode('skip')}
-                        style={{
-                          background: conflictMode === 'skip' ? '#1a1a2e' : '#f0f0f0',
-                          color: conflictMode === 'skip' ? '#fff' : '#555',
-                          border: 'none',
-                          borderRadius: '12px',
-                          padding: '10px 16px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
+                        style={conflictMode === 'skip' ? btnPrimary : btnSecondary}
                       >
                         Omitir conflictos
                       </button>
                       <button
                         onClick={() => setConflictMode('replace')}
-                        style={{
-                          background: conflictMode === 'replace' ? '#1a1a2e' : '#f0f0f0',
-                          color: conflictMode === 'replace' ? '#fff' : '#555',
-                          border: 'none',
-                          borderRadius: '12px',
-                          padding: '10px 16px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
+                        style={conflictMode === 'replace' ? btnPrimary : btnSecondary}
                       >
                         Actualizar existentes
                       </button>
@@ -732,26 +803,21 @@ export default function Dashboard() {
 
                 {preview.errors.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '8px' }}>Filas con error</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Filas con error</div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <thead>
                           <tr>
                             {['Fila', 'Detalle'].map((header) => (
-                              <th
-                                key={header}
-                                style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid #f0f0f0', color: '#aaa', fontWeight: '500', fontSize: '11px' }}
-                              >
-                                {header}
-                              </th>
+                              <th key={header} style={thStyle}>{header}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {preview.errors.map((errorRow) => (
                             <tr key={`${errorRow.rowNumber}-${errorRow.message}`}>
-                              <td style={{ padding: '12px', borderBottom: '1px solid #f7f7f7', color: '#111', fontWeight: '600' }}>{errorRow.rowNumber}</td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid #f7f7f7', color: '#555' }}>{errorRow.message}</td>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: NAVY, fontWeight: '600' }}>{errorRow.rowNumber}</td>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>{errorRow.message}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -762,29 +828,24 @@ export default function Dashboard() {
 
                 {preview.conflicts.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '8px' }}>Conflictos detectados</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Conflictos detectados</div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <thead>
                           <tr>
                             {['Referencia', 'Actual', 'Archivo'].map((header) => (
-                              <th
-                                key={header}
-                                style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid #f0f0f0', color: '#aaa', fontWeight: '500', fontSize: '11px' }}
-                              >
-                                {header}
-                              </th>
+                              <th key={header} style={thStyle}>{header}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {preview.conflicts.map((conflict) => (
                             <tr key={conflict.reference_code}>
-                              <td style={{ padding: '12px', borderBottom: '1px solid #f7f7f7', color: '#111', fontWeight: '600' }}>{conflict.reference_code}</td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid #f7f7f7', color: '#555' }}>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: NAVY, fontWeight: '600' }}>{conflict.reference_code}</td>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>
                                 {conflict.existing.nombre ?? conflict.existing.tipo_prenda ?? 'Sin nombre'} {conflict.existing.color ? `· ${conflict.existing.color}` : ''}
                               </td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid #f7f7f7', color: '#555' }}>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>
                                 {conflict.incoming.nombre ?? conflict.incoming.tipo_prenda ?? 'Sin nombre'} {conflict.incoming.color ? `· ${conflict.incoming.color}` : ''}
                               </td>
                             </tr>
@@ -795,25 +856,19 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     onClick={confirmarImportacion}
                     disabled={commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0}
                     style={{
-                      background: '#1a1a2e',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '10px 18px',
-                      fontSize: '13px',
-                      fontWeight: '600',
+                      ...btnPrimary,
                       cursor: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 'not-allowed' : 'pointer',
                       opacity: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 0.6 : 1,
                     }}
                   >
                     {commitLoading ? 'Guardando referencias...' : 'Confirmar importación'}
                   </button>
-                  <div style={{ fontSize: '12px', color: '#888', alignSelf: 'center' }}>
+                  <div style={{ fontSize: '12px', color: GRAY400 }}>
                     {preview.summary.invalidRows > 0
                       ? 'Debes corregir el archivo antes de guardar.'
                       : preview.summary.conflicts > 0
@@ -825,34 +880,29 @@ export default function Dashboard() {
             )}
 
             <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '1rem' }}>Catálogo de referencias</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Catálogo de referencias</div>
               {referencias.length === 0 ? (
-                <p style={{ color: '#ccc', fontSize: '13px' }}>Aún no hay referencias cargadas.</p>
+                <p style={{ color: GRAY200, fontSize: '13px' }}>Aún no hay referencias cargadas.</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
                       <tr>
                         {['Referencia', 'Nombre', 'Tipo', 'Color', 'Talla', 'Precio', 'Temporada'].map((header) => (
-                          <th
-                            key={header}
-                            style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '1px solid #f0f0f0', color: '#aaa', fontWeight: '500', fontSize: '11px' }}
-                          >
-                            {header}
-                          </th>
+                          <th key={header} style={thStyle}>{header}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {referencias.map((referencia, index) => (
-                        <tr key={referencia.id ?? referencia.reference_code} style={{ background: index % 2 === 0 ? '#fff' : '#fafafa' }}>
-                          <td style={{ padding: '12px', color: '#111', fontWeight: '600' }}>{referencia.reference_code}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.nombre ?? '-'}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.tipo_prenda ?? '-'}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.color ?? '-'}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.talla ?? '-'}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.precio !== null && referencia.precio !== undefined ? `$${referencia.precio.toLocaleString()}` : '-'}</td>
-                          <td style={{ padding: '12px', color: '#555' }}>{referencia.temporada ?? '-'}</td>
+                        <tr key={referencia.id ?? referencia.reference_code} style={{ background: index % 2 === 0 ? WHITE : GRAY50 }}>
+                          <td style={{ padding: '12px 14px', color: NAVY, fontWeight: '600' }}>{referencia.reference_code}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.nombre ?? '-'}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.tipo_prenda ?? '-'}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.color ?? '-'}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.talla ?? '-'}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.precio !== null && referencia.precio !== undefined ? `$${referencia.precio.toLocaleString()}` : '-'}</td>
+                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.temporada ?? '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -863,36 +913,63 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* IA SECTION */}
         {seccion === 'ia' && (
           <div>
             <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>Análisis inteligente de tu colección</div>
-              <div style={{ fontSize: '13px', color: '#999', marginBottom: '1.25rem' }}>
-                Claude analiza tus ventas y te dice qué producir más, qué descontinuar y qué tendencias aprovechar.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: `${GOLD}22`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: GOLD,
+                }}>
+                  AI
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY }}>Análisis inteligente de tu colección</div>
+              </div>
+              <div style={{ fontSize: '13px', color: GRAY400, marginBottom: '1.25rem', paddingLeft: '38px' }}>
+                Claude analiza tus ventas y te recomienda qué producir más, qué descontinuar y qué tendencias aprovechar.
               </div>
               <button
                 onClick={analizarConIA}
                 disabled={loadingIA || ventas.length === 0}
                 style={{
-                  background: ventas.length === 0 ? '#f0f0f0' : '#1a1a2e',
-                  color: ventas.length === 0 ? '#aaa' : '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
+                  ...btnPrimary,
+                  background: ventas.length === 0 ? GRAY100 : NAVY,
+                  color: ventas.length === 0 ? GRAY400 : WHITE,
                   padding: '12px 28px',
-                  fontSize: '13px',
-                  fontWeight: '600',
                   cursor: ventas.length === 0 ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loadingIA ? '⏳ Analizando...' : '✦ Analizar con Claude'}
+                {loadingIA ? 'Analizando...' : 'Analizar con Claude'}
               </button>
-              {ventas.length === 0 && <p style={{ fontSize: '12px', color: '#ccc', marginTop: '8px' }}>Registra al menos una venta primero.</p>}
+              {ventas.length === 0 && <p style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>Registra al menos una venta primero.</p>}
             </div>
 
             {analisis && (
-              <div style={{ background: '#1a1a2e', borderRadius: '20px', padding: '1.5rem' }}>
-                <div style={{ fontSize: '11px', fontWeight: '600', color: '#a89ef8', marginBottom: '12px', letterSpacing: '0.08em' }}>ANÁLISIS DE CLAUDE ✦</div>
-                <div style={{ fontSize: '14px', color: '#e8e8ff', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>{analisis}</div>
+              <div style={{
+                background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_MID} 100%)`,
+                borderRadius: '14px',
+                padding: '1.5rem',
+              }}>
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  color: GOLD,
+                  marginBottom: '14px',
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                }}>
+                  Análisis de Claude
+                </div>
+                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>{analisis}</div>
               </div>
             )}
           </div>

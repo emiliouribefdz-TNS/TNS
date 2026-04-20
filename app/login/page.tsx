@@ -7,6 +7,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
 )
 
+function TennisLogo({ variant = 'dark', width = 120 }: { variant?: 'dark' | 'white'; width?: number }) {
+  const src = variant === 'white' ? '/tns-logo-white.svg' : '/tns-logo.svg'
+  return <img src={src} alt="TNS" width={width} style={{ objectFit: 'contain' }} />
+}
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,72 +34,195 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', background: '#f7f7f5' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+      {/* Left panel - Login form */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+        background: '#FFFFFF',
+      }}>
         <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-          <svg width="110" height="110" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="38" cy="44" rx="20" ry="26" fill="none" stroke="#111" strokeWidth="2.5" transform="rotate(-25 38 44)"/>
-            <line x1="22" y1="33" x2="54" y2="55" stroke="#111" strokeWidth="1.2"/>
-            <line x1="17" y1="43" x2="59" y2="45" stroke="#111" strokeWidth="1.2"/>
-            <line x1="21" y1="53" x2="55" y2="35" stroke="#111" strokeWidth="1.2"/>
-            <line x1="30" y1="24" x2="46" y2="64" stroke="#111" strokeWidth="1.2"/>
-            <line x1="38" y1="20" x2="38" y2="66" stroke="#111" strokeWidth="1.2"/>
-            <rect x="34" y="66" width="8" height="20" rx="2.5" fill="#111" transform="rotate(-25 34 66)"/>
-            <ellipse cx="82" cy="44" rx="20" ry="26" fill="none" stroke="#111" strokeWidth="2.5" transform="rotate(25 82 44)"/>
-            <line x1="66" y1="33" x2="98" y2="55" stroke="#111" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-            <line x1="61" y1="43" x2="103" y2="45" stroke="#111" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-            <line x1="65" y1="53" x2="99" y2="35" stroke="#111" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-            <line x1="74" y1="24" x2="90" y2="64" stroke="#111" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-            <line x1="82" y1="20" x2="82" y2="66" stroke="#111" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-            <rect x="78" y="66" width="8" height="20" rx="2.5" fill="#111" transform="rotate(25 78 66)"/>
-            <text x="29" y="92" textAnchor="middle" fontSize="7" fill="#888" fontFamily="-apple-system, sans-serif">19</text>
-            <text x="91" y="92" textAnchor="middle" fontSize="7" fill="#888" fontFamily="-apple-system, sans-serif">76</text>
-            <text x="60" y="112" textAnchor="middle" fontSize="15" fontWeight="700" letterSpacing="5" fill="#111" fontFamily="-apple-system, sans-serif">TNS</text>
-          </svg>
+          <TennisLogo variant="dark" width={120} />
         </div>
-        <div style={{ background: '#fff', borderRadius: '20px', padding: '2.5rem', width: '100%', maxWidth: '380px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#111', margin: '0 0 4px' }}>Bienvenido</h1>
-          <p style={{ fontSize: '13px', color: '#999', margin: '0 0 1.75rem' }}>Ingresa tus credenciales para continuar</p>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '11px', fontWeight: '500', color: '#888', display: 'block', marginBottom: '6px' }}>EMAIL</label>
-            <input type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKey}
-              style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e8e8e8', fontSize: '14px', color: '#111', background: '#fafafa', outline: 'none', boxSizing: 'border-box' as const }}/>
+
+        <div style={{
+          width: '100%',
+          maxWidth: '380px',
+        }}>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#0D1B2A', margin: '0 0 6px', letterSpacing: '-0.3px' }}>
+            Bienvenido
+          </h1>
+          <p style={{ fontSize: '14px', color: '#6C757D', margin: '0 0 2rem' }}>
+            Ingresa tus credenciales para continuar
+          </p>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '600', color: '#6C757D', display: 'block', marginBottom: '6px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              Email
+            </label>
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={handleKey}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: '1.5px solid #DEE2E6',
+                fontSize: '14px',
+                color: '#0D1B2A',
+                background: '#F8F9FA',
+                outline: 'none',
+                boxSizing: 'border-box' as const,
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={e => e.target.style.borderColor = '#0D1B2A'}
+              onBlur={e => e.target.style.borderColor = '#DEE2E6'}
+            />
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '11px', fontWeight: '500', color: '#888', display: 'block', marginBottom: '6px' }}>CONTRASEÑA</label>
-            <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey}
-              style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #e8e8e8', fontSize: '14px', color: '#111', background: '#fafafa', outline: 'none', boxSizing: 'border-box' as const }}/>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '600', color: '#6C757D', display: 'block', marginBottom: '6px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              Contraseña
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKey}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: '1.5px solid #DEE2E6',
+                fontSize: '14px',
+                color: '#0D1B2A',
+                background: '#F8F9FA',
+                outline: 'none',
+                boxSizing: 'border-box' as const,
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={e => e.target.style.borderColor = '#0D1B2A'}
+              onBlur={e => e.target.style.borderColor = '#DEE2E6'}
+            />
           </div>
-          {error && <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: '8px', padding: '10px 14px', fontSize: '12px', color: '#cc0000', marginBottom: '16px' }}>{error}</div>}
-          <button onClick={handleLogin} disabled={loading}
-            style={{ width: '100%', padding: '12px', background: '#111', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+
+          {error && (
+            <div style={{
+              background: '#FFF0F1',
+              border: '1px solid #FFCDD2',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              color: '#E63946',
+              marginBottom: '16px',
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '13px',
+              background: '#0D1B2A',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              letterSpacing: '0.3px',
+              transition: 'opacity 0.2s',
+            }}
+          >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </div>
-        <p style={{ fontSize: '11px', color: '#ccc', marginTop: '2rem' }}>© 2025 TNS · FashionAI</p>
+
+        <p style={{ fontSize: '11px', color: '#ADB5BD', marginTop: '3rem' }}>
+          Tennis S.A. &middot; FashionAI Dashboard
+        </p>
       </div>
-      <div style={{ width: '40%', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem' }}>
-        <svg width="90" height="90" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '2rem' }}>
-          <ellipse cx="38" cy="44" rx="20" ry="26" fill="none" stroke="#fff" strokeWidth="2.5" transform="rotate(-25 38 44)"/>
-          <line x1="22" y1="33" x2="54" y2="55" stroke="#fff" strokeWidth="1.2"/>
-          <line x1="17" y1="43" x2="59" y2="45" stroke="#fff" strokeWidth="1.2"/>
-          <line x1="21" y1="53" x2="55" y2="35" stroke="#fff" strokeWidth="1.2"/>
-          <line x1="30" y1="24" x2="46" y2="64" stroke="#fff" strokeWidth="1.2"/>
-          <line x1="38" y1="20" x2="38" y2="66" stroke="#fff" strokeWidth="1.2"/>
-          <rect x="34" y="66" width="8" height="20" rx="2.5" fill="#fff" transform="rotate(-25 34 66)"/>
-          <ellipse cx="82" cy="44" rx="20" ry="26" fill="none" stroke="#fff" strokeWidth="2.5" transform="rotate(25 82 44)"/>
-          <line x1="66" y1="33" x2="98" y2="55" stroke="#fff" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-          <line x1="61" y1="43" x2="103" y2="45" stroke="#fff" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-          <line x1="65" y1="53" x2="99" y2="35" stroke="#fff" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-          <line x1="74" y1="24" x2="90" y2="64" stroke="#fff" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-          <line x1="82" y1="20" x2="82" y2="66" stroke="#fff" strokeWidth="1.2" transform="rotate(50 82 44)"/>
-          <rect x="78" y="66" width="8" height="20" rx="2.5" fill="#fff" transform="rotate(25 78 66)"/>
-          <text x="29" y="92" textAnchor="middle" fontSize="7" fill="#666" fontFamily="-apple-system, sans-serif">19</text>
-          <text x="91" y="92" textAnchor="middle" fontSize="7" fill="#666" fontFamily="-apple-system, sans-serif">76</text>
-          <text x="60" y="112" textAnchor="middle" fontSize="15" fontWeight="700" letterSpacing="5" fill="#fff" fontFamily="-apple-system, sans-serif">TNS</text>
-        </svg>
-        <p style={{ color: '#fff', fontSize: '22px', fontWeight: '600', margin: '0 0 8px', textAlign: 'center' }}>FashionAI</p>
-        <p style={{ color: '#555', fontSize: '13px', textAlign: 'center', lineHeight: '1.6' }}>Gestiona tu colección,<br/>analiza tendencias con IA</p>
+
+      {/* Right panel - Brand showcase */}
+      <div style={{
+        width: '42%',
+        background: 'linear-gradient(160deg, #0D1B2A 0%, #1B2A4A 50%, #15233B 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative elements */}
+        <div style={{
+          position: 'absolute',
+          top: '-80px',
+          right: '-80px',
+          width: '300px',
+          height: '300px',
+          borderRadius: '50%',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-120px',
+          left: '-60px',
+          width: '400px',
+          height: '400px',
+          borderRadius: '50%',
+          border: '1px solid rgba(255,255,255,0.03)',
+        }} />
+
+        <TennisLogo variant="white" width={140} />
+
+        <div style={{ marginTop: '2rem', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{
+            width: '40px',
+            height: '2px',
+            background: '#C9A84C',
+            margin: '12px auto',
+          }} />
+          <p style={{
+            color: 'rgba(255,255,255,0.85)',
+            fontSize: '15px',
+            fontWeight: '500',
+            margin: '0 0 8px',
+          }}>
+            FashionAI
+          </p>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: '13px',
+            lineHeight: '1.7',
+            maxWidth: '260px',
+          }}>
+            Gestiona tu colección, analiza tendencias y toma decisiones con inteligencia artificial.
+          </p>
+        </div>
+
+        <div style={{
+          position: 'absolute',
+          bottom: '2rem',
+          color: 'rgba(255,255,255,0.2)',
+          fontSize: '11px',
+          letterSpacing: '2px',
+        }}>
+          DESDE 1976 &middot; MEDELLN
+        </div>
       </div>
     </div>
   )

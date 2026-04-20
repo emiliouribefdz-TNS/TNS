@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TNS FashionAI',
-  description: 'Dashboard de ventas e importación de referencias para TNS.',
+  title: 'Tennis - FashionAI Dashboard',
+  description: 'Dashboard inteligente de ventas y colecciones para Tennis.',
 }
 
 export default function RootLayout({
