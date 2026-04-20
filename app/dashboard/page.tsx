@@ -2,7 +2,7 @@
 
 import { ChangeEvent, CSSProperties, useEffect, useRef, useState } from 'react'
 import { createClient, User } from '@supabase/supabase-js'
-import type { ImportPreview, ReferenciaRecord } from '@/lib/referencias'
+import type { VentaImportPreview } from '@/lib/ventas'
 
 type Venta = {
   id: string
@@ -16,16 +16,12 @@ type Venta = {
   temporada: string
 }
 
-type ConflictMode = 'skip' | 'replace'
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
 )
 
 const prendas = ['Camiseta', 'Jean', 'Blusa', 'Vestido', 'Chaqueta', 'Pantalón', 'Falda']
-const tallas = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const temporadas = ['Verano 2025', 'Otoño 2025', 'Invierno 2025', 'Primavera 2026']
 
 /* Tennis brand palette */
 const NAVY = '#0D1B2A'
@@ -47,7 +43,6 @@ const BAR_COLORS = ['#1B2A4A', '#C9A84C', '#E63946', '#2D9F6F', '#6C757D', '#4A9
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'D' },
   { id: 'ventas', label: 'Ventas', icon: 'V' },
-  { id: 'referencias', label: 'Referencias', icon: 'R' },
   { id: 'ia', label: 'Análisis IA', icon: 'AI' },
 ] as const
 
@@ -77,40 +72,28 @@ function TennisLogoSmall({ width = 28 }: { width?: number }) {
 
 function getSectionTitle(section: string) {
   if (section === 'ventas') return 'Ventas'
-  if (section === 'referencias') return 'Referencias'
   if (section === 'ia') return 'Análisis IA'
   return 'Dashboard'
 }
 
 function getSectionSubtitle(section: string) {
-  if (section === 'ventas') return 'Registra y consulta las ventas de tu colección'
-  if (section === 'referencias') return 'Catálogo de referencias importadas'
+  if (section === 'ventas') return 'Importa o registra las ventas de tu colección'
   if (section === 'ia') return 'Recomendaciones inteligentes con Claude'
   return 'Resumen general de tu operación'
 }
 
 export default function Dashboard() {
   const [ventas, setVentas] = useState<Venta[]>([])
-  const [referencias, setReferencias] = useState<ReferenciaRecord[]>([])
-  const [tipo, setTipo] = useState('Camiseta')
-  const [color, setColor] = useState('')
-  const [talla, setTalla] = useState('M')
-  const [unidades, setUnidades] = useState('')
-  const [precio, setPrecio] = useState('')
-  const [temporada, setTemporada] = useState('Verano 2025')
   const [analisis, setAnalisis] = useState('')
   const [loadingIA, setLoadingIA] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [seccion, setSeccion] = useState<(typeof navItems)[number]['id']>('dashboard')
-  const [showForm, setShowForm] = useState(false)
-  const [referenciasError, setReferenciasError] = useState('')
-  const [preview, setPreview] = useState<ImportPreview | null>(null)
+  const [preview, setPreview] = useState<VentaImportPreview | null>(null)
   const [importFileName, setImportFileName] = useState('')
   const [previewLoading, setPreviewLoading] = useState(false)
   const [commitLoading, setCommitLoading] = useState(false)
   const [importMessage, setImportMessage] = useState('')
   const [importError, setImportError] = useState('')
-  const [conflictMode, setConflictMode] = useState<ConflictMode>('skip')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -121,57 +104,13 @@ export default function Dashboard() {
       }
 
       setUser(data.user)
-      await Promise.all([cargarVentas(), cargarReferencias(data.user.email ?? '')])
+      await cargarVentas()
     })
   }, [])
 
   const cargarVentas = async () => {
     const { data } = await supabase.from('ventas').select('*').order('created_at', { ascending: false })
     if (data) setVentas(data as Venta[])
-  }
-
-  const cargarReferencias = async (email: string) => {
-    if (!email) return
-
-    const { data, error } = await supabase
-      .from('referencias')
-      .select('id, created_at, empresa, reference_code, nombre, tipo_prenda, color, talla, precio, temporada, notas, image_url')
-      .eq('empresa', email)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      setReferencias([])
-      setReferenciasError('No pude cargar las referencias. Aplica la migración de Supabase antes de usar esta sección.')
-      return
-    }
-
-    setReferenciasError('')
-    setReferencias((data ?? []) as ReferenciaRecord[])
-  }
-
-  const registrarVenta = async () => {
-    if (!color || !unidades || !precio) {
-      alert('Completa todos los campos')
-      return
-    }
-
-    await supabase.from('ventas').insert([
-      {
-        empresa: user?.email,
-        tipo_prenda: tipo,
-        color,
-        talla,
-        unidades: parseInt(unidades, 10),
-        precio: parseInt(precio, 10),
-        temporada,
-      },
-    ])
-
-    setColor('')
-    setUnidades('')
-    setPrecio('')
-    setShowForm(false)
-    cargarVentas()
   }
 
   const analizarConIA = async () => {
@@ -215,7 +154,6 @@ export default function Dashboard() {
     setImportFileName('')
     setImportMessage('')
     setImportError('')
-    setConflictMode('skip')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -230,7 +168,7 @@ export default function Dashboard() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const res = await fetch('/api/referencias/preview', {
+      const res = await fetch('/api/ventas/preview', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -244,9 +182,8 @@ export default function Dashboard() {
         throw new Error(data.error ?? 'No fue posible leer el archivo.')
       }
 
-      setPreview(data as ImportPreview)
+      setPreview(data as VentaImportPreview)
       setImportFileName(file.name)
-      setConflictMode(data.summary.conflicts > 0 ? 'skip' : 'replace')
     } catch (error) {
       resetImportState()
       setImportError(error instanceof Error ? error.message : 'No fue posible previsualizar el archivo.')
@@ -275,34 +212,27 @@ export default function Dashboard() {
 
     try {
       const token = await getAccessToken()
-      const res = await fetch('/api/referencias/commit', {
+      const res = await fetch('/api/ventas/commit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          rows: preview.rows,
-          mode: conflictMode,
-        }),
+        body: JSON.stringify({ rows: preview.rows }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error ?? 'No fue posible guardar las referencias.')
+        throw new Error(data.error ?? 'No fue posible guardar las ventas.')
       }
 
-      setImportMessage(
-        `Importación completada. ${data.saved} filas guardadas${data.skippedConflicts ? ` · ${data.skippedConflicts} conflictos omitidos` : ''}${
-          data.resolvedConflicts ? ` · ${data.resolvedConflicts} conflictos actualizados` : ''
-        }.`
-      )
+      setImportMessage(`Importación completada. ${data.saved} ventas guardadas.`)
       setPreview(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-      await cargarReferencias(user?.email ?? '')
+      await cargarVentas()
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'No fue posible guardar las referencias.')
+      setImportError(error instanceof Error ? error.message : 'No fue posible guardar las ventas.')
     } finally {
       setCommitLoading(false)
     }
@@ -490,12 +420,6 @@ export default function Dashboard() {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {seccion === 'ventas' && (
-              <button onClick={() => setShowForm(!showForm)} style={btnPrimary}>
-                + Nueva venta
-              </button>
-            )}
-
-            {seccion === 'referencias' && (
               <button onClick={() => fileInputRef.current?.click()} style={btnPrimary}>
                 + Importar Excel
               </button>
@@ -548,12 +472,6 @@ export default function Dashboard() {
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Referencias</div>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: NAVY }}>{referencias.length}</div>
-                <div style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>En catálogo activo</div>
-              </div>
-
-              <div style={cardStyle}>
                 <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Prenda estrella</div>
                 <div style={{ fontSize: '22px', fontWeight: '700', color: NAVY }}>{topPrenda ? topPrenda.tipo_prenda : '-'}</div>
                 <div style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>
@@ -594,13 +512,13 @@ export default function Dashboard() {
               </div>
 
               <div style={cardStyle}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1.25rem' }}>Referencias recientes</div>
-                {referencias.length === 0 ? (
-                  <p style={{ color: GRAY200, fontSize: '13px' }}>Aún no has importado referencias.</p>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1.25rem' }}>Ventas recientes</div>
+                {ventas.length === 0 ? (
+                  <p style={{ color: GRAY200, fontSize: '13px' }}>Aún no has importado ventas.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {referencias.slice(0, 5).map((referencia, index) => (
-                      <div key={referencia.id ?? referencia.reference_code} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {ventas.slice(0, 5).map((venta, index) => (
+                      <div key={venta.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div
                           style={{
                             width: '36px',
@@ -615,15 +533,15 @@ export default function Dashboard() {
                             color: index === 0 ? GOLD : NAVY_LIGHT,
                           }}
                         >
-                          {referencia.reference_code?.slice(0, 2) ?? 'R'}
+                          {venta.tipo_prenda[0]}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: '500', color: NAVY }}>{referencia.reference_code}</div>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: NAVY }}>{venta.tipo_prenda}</div>
                           <div style={{ fontSize: '11px', color: GRAY400 }}>
-                            {referencia.nombre ?? referencia.tipo_prenda ?? 'Sin nombre'} {referencia.color ? `· ${referencia.color}` : ''}
+                            {venta.color} {venta.talla ? `· ${venta.talla}` : ''} · {venta.unidades} un.
                           </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: GRAY400 }}>{referencia.temporada ?? ''}</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: GOLD }}>${(venta.unidades * venta.precio).toLocaleString()}</div>
                       </div>
                     ))}
                   </div>
@@ -635,38 +553,139 @@ export default function Dashboard() {
 
         {/* VENTAS SECTION */}
         {seccion === 'ventas' && (
-          <div>
-            {showForm && (
-              <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Nueva venta</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '1rem' }}>
-                  <select value={tipo} onChange={(event) => setTipo(event.target.value)} style={inputStyle}>
-                    {prendas.map((prenda) => (
-                      <option key={prenda}>{prenda}</option>
-                    ))}
-                  </select>
-                  <input placeholder="Color" value={color} onChange={(event) => setColor(event.target.value)} style={inputStyle} />
-                  <select value={talla} onChange={(event) => setTalla(event.target.value)} style={inputStyle}>
-                    {tallas.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-                  <input placeholder="Unidades" type="number" value={unidades} onChange={(event) => setUnidades(event.target.value)} style={inputStyle} />
-                  <input placeholder="Precio $" type="number" value={precio} onChange={(event) => setPrecio(event.target.value)} style={inputStyle} />
-                  <select value={temporada} onChange={(event) => setTemporada(event.target.value)} style={inputStyle}>
-                    {temporadas.map((season) => (
-                      <option key={season}>{season}</option>
-                    ))}
-                  </select>
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <div style={cardStyle}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '4px' }}>Importar ventas desde Excel</div>
+                <div style={{ fontSize: '13px', color: GRAY400, marginBottom: '1rem' }}>
+                  Sube un archivo `.xlsx` o `.csv` con las columnas: <strong>tipo/prenda</strong> (obligatoria), <strong>unidades</strong> (obligatoria), <strong>precio</strong> (obligatoria), y opcionalmente color, talla, temporada.
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={registrarVenta} style={btnPrimary}>Guardar</button>
-                  <button onClick={() => setShowForm(false)} style={btnSecondary}>Cancelar</button>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={previewLoading || commitLoading}
+                    style={{
+                      ...btnPrimary,
+                      cursor: previewLoading || commitLoading ? 'not-allowed' : 'pointer',
+                      opacity: previewLoading || commitLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {previewLoading ? 'Leyendo archivo...' : 'Seleccionar archivo'}
+                  </button>
+
+                  {(preview || importFileName || importMessage || importError) && (
+                    <button onClick={resetImportState} style={btnSecondary}>Limpiar</button>
+                  )}
+                </div>
+
+                {importFileName && <div style={{ fontSize: '12px', color: GRAY600, marginBottom: '12px' }}>Archivo: {importFileName}</div>}
+                {importMessage && <div style={{ background: '#EEFBF3', border: '1px solid #c9efda', color: '#127148', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importMessage}</div>}
+                {importError && <div style={{ background: '#FFF0F1', border: '1px solid #FFCDD2', color: ACCENT, borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importError}</div>}
+            </div>
+
+            {/* Preview card */}
+            {preview && (
+              <div style={{ ...cardStyle, display: 'grid', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Resumen de importación</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                    {[
+                      ['Total filas', preview.summary.totalRows],
+                      ['Filas válidas', preview.summary.validRows],
+                      ['Filas con error', preview.summary.invalidRows],
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ background: GRAY50, borderRadius: '10px', padding: '14px', border: `1px solid ${GRAY100}` }}>
+                        <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</div>
+                        <div style={{ fontSize: '22px', fontWeight: '700', color: NAVY }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '12px', color: GRAY600 }}>
+                  Columnas detectadas: {preview.columnsDetected.length > 0 ? preview.columnsDetected.join(', ') : 'No se detectaron encabezados'}
+                </div>
+
+                {preview.errors.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Filas con error</div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr>
+                            {['Fila', 'Detalle'].map((header) => (
+                              <th key={header} style={thStyle}>{header}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.errors.map((errorRow) => (
+                            <tr key={`${errorRow.rowNumber}-${errorRow.message}`}>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: NAVY, fontWeight: '600' }}>{errorRow.rowNumber}</td>
+                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>{errorRow.message}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Preview table of valid rows */}
+                {preview.rows.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Vista previa ({preview.rows.length} ventas)</div>
+                    <div style={{ overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr>
+                            {['Prenda', 'Color', 'Talla', 'Unidades', 'Precio', 'Temporada'].map((header) => (
+                              <th key={header} style={thStyle}>{header}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.rows.slice(0, 20).map((row) => (
+                            <tr key={row.rowNumber} style={{ background: row.rowNumber % 2 === 0 ? WHITE : GRAY50 }}>
+                              <td style={{ padding: '10px 14px', color: NAVY, fontWeight: '500' }}>{row.tipo_prenda}</td>
+                              <td style={{ padding: '10px 14px', color: GRAY600 }}>{row.color ?? '-'}</td>
+                              <td style={{ padding: '10px 14px', color: GRAY600 }}>{row.talla ?? '-'}</td>
+                              <td style={{ padding: '10px 14px', fontWeight: '600', color: NAVY }}>{row.unidades}</td>
+                              <td style={{ padding: '10px 14px', color: GRAY600 }}>${row.precio.toLocaleString()}</td>
+                              <td style={{ padding: '10px 14px', color: GRAY600 }}>{row.temporada ?? '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {preview.rows.length > 20 && (
+                        <div style={{ fontSize: '12px', color: GRAY400, padding: '10px 14px' }}>... y {preview.rows.length - 20} filas más</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    onClick={confirmarImportacion}
+                    disabled={commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0}
+                    style={{
+                      ...btnPrimary,
+                      cursor: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 'not-allowed' : 'pointer',
+                      opacity: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 0.6 : 1,
+                    }}
+                  >
+                    {commitLoading ? 'Guardando ventas...' : 'Confirmar importación'}
+                  </button>
+                  <div style={{ fontSize: '12px', color: GRAY400 }}>
+                    {preview.summary.invalidRows > 0
+                      ? 'Debes corregir el archivo antes de guardar.'
+                      : 'Todo listo para guardar.'}
+                  </div>
                 </div>
               </div>
             )}
 
+            {/* Ventas table */}
             <div style={cardStyle}>
               <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Todas las ventas</div>
               {ventas.length === 0 ? (
@@ -714,195 +733,6 @@ export default function Dashboard() {
                             <span style={{ background: `${NAVY}0D`, color: NAVY_LIGHT, fontSize: '11px', padding: '4px 12px', borderRadius: '20px', fontWeight: '500' }}>{venta.temporada}</span>
                           </td>
                           <td style={{ padding: '12px 14px', fontWeight: '600', color: GOLD }}>${(venta.unidades * venta.precio).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* REFERENCIAS SECTION */}
-        {seccion === 'referencias' && (
-          <div style={{ display: 'grid', gap: '16px' }}>
-            <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '4px' }}>Importar catálogo desde Excel</div>
-              <div style={{ fontSize: '13px', color: GRAY400, marginBottom: '1rem' }}>
-                Sube un archivo `.xlsx` o `.csv`. Usa `reference_code` como columna obligatoria. También puedes incluir `nombre`, `tipo`, `color`, `talla`, `precio`, `temporada`, `notas` e `image_url`.
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={previewLoading || commitLoading}
-                  style={{
-                    ...btnPrimary,
-                    cursor: previewLoading || commitLoading ? 'not-allowed' : 'pointer',
-                    opacity: previewLoading || commitLoading ? 0.6 : 1,
-                  }}
-                >
-                  {previewLoading ? 'Leyendo archivo...' : 'Seleccionar archivo'}
-                </button>
-
-                {(preview || importFileName || importMessage || importError) && (
-                  <button onClick={resetImportState} style={btnSecondary}>Limpiar</button>
-                )}
-              </div>
-
-              {importFileName && <div style={{ fontSize: '12px', color: GRAY600, marginBottom: '12px' }}>Archivo: {importFileName}</div>}
-              {importMessage && <div style={{ background: '#EEFBF3', border: '1px solid #c9efda', color: '#127148', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importMessage}</div>}
-              {importError && <div style={{ background: '#FFF0F1', border: '1px solid #FFCDD2', color: ACCENT, borderRadius: '8px', padding: '12px 14px', fontSize: '13px', marginBottom: '12px' }}>{importError}</div>}
-              {referenciasError && <div style={{ background: '#FBF7ED', border: `1px solid ${GOLD}44`, color: '#8a5b00', borderRadius: '8px', padding: '12px 14px', fontSize: '13px' }}>{referenciasError}</div>}
-            </div>
-
-            {preview && (
-              <div style={{ ...cardStyle, display: 'grid', gap: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Resumen de importación</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
-                    {[
-                      ['Total filas', preview.summary.totalRows],
-                      ['Filas válidas', preview.summary.validRows],
-                      ['Filas con error', preview.summary.invalidRows],
-                      ['Referencias nuevas', preview.summary.newRows],
-                      ['Conflictos', preview.summary.conflicts],
-                    ].map(([label, value]) => (
-                      <div key={label} style={{ background: GRAY50, borderRadius: '10px', padding: '14px', border: `1px solid ${GRAY100}` }}>
-                        <div style={{ fontSize: '11px', color: GRAY400, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</div>
-                        <div style={{ fontSize: '22px', fontWeight: '700', color: NAVY }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '12px', color: GRAY600 }}>
-                  Columnas detectadas: {preview.columnsDetected.length > 0 ? preview.columnsDetected.join(', ') : 'No se detectaron encabezados'}
-                </div>
-
-                {preview.conflicts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Cómo resolver duplicados</div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => setConflictMode('skip')}
-                        style={conflictMode === 'skip' ? btnPrimary : btnSecondary}
-                      >
-                        Omitir conflictos
-                      </button>
-                      <button
-                        onClick={() => setConflictMode('replace')}
-                        style={conflictMode === 'replace' ? btnPrimary : btnSecondary}
-                      >
-                        Actualizar existentes
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {preview.errors.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Filas con error</div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                        <thead>
-                          <tr>
-                            {['Fila', 'Detalle'].map((header) => (
-                              <th key={header} style={thStyle}>{header}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {preview.errors.map((errorRow) => (
-                            <tr key={`${errorRow.rowNumber}-${errorRow.message}`}>
-                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: NAVY, fontWeight: '600' }}>{errorRow.rowNumber}</td>
-                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>{errorRow.message}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {preview.conflicts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '8px' }}>Conflictos detectados</div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                        <thead>
-                          <tr>
-                            {['Referencia', 'Actual', 'Archivo'].map((header) => (
-                              <th key={header} style={thStyle}>{header}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {preview.conflicts.map((conflict) => (
-                            <tr key={conflict.reference_code}>
-                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: NAVY, fontWeight: '600' }}>{conflict.reference_code}</td>
-                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>
-                                {conflict.existing.nombre ?? conflict.existing.tipo_prenda ?? 'Sin nombre'} {conflict.existing.color ? `· ${conflict.existing.color}` : ''}
-                              </td>
-                              <td style={{ padding: '12px 14px', borderBottom: `1px solid ${GRAY100}`, color: GRAY600 }}>
-                                {conflict.incoming.nombre ?? conflict.incoming.tipo_prenda ?? 'Sin nombre'} {conflict.incoming.color ? `· ${conflict.incoming.color}` : ''}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
-                    onClick={confirmarImportacion}
-                    disabled={commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0}
-                    style={{
-                      ...btnPrimary,
-                      cursor: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 'not-allowed' : 'pointer',
-                      opacity: commitLoading || preview.rows.length === 0 || preview.summary.invalidRows > 0 ? 0.6 : 1,
-                    }}
-                  >
-                    {commitLoading ? 'Guardando referencias...' : 'Confirmar importación'}
-                  </button>
-                  <div style={{ fontSize: '12px', color: GRAY400 }}>
-                    {preview.summary.invalidRows > 0
-                      ? 'Debes corregir el archivo antes de guardar.'
-                      : preview.summary.conflicts > 0
-                        ? `Modo actual: ${conflictMode === 'skip' ? 'omitir conflictos' : 'actualizar referencias existentes'}.`
-                        : 'Todo listo para guardar.'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: NAVY, marginBottom: '1rem' }}>Catálogo de referencias</div>
-              {referencias.length === 0 ? (
-                <p style={{ color: GRAY200, fontSize: '13px' }}>Aún no hay referencias cargadas.</p>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr>
-                        {['Referencia', 'Nombre', 'Tipo', 'Color', 'Talla', 'Precio', 'Temporada'].map((header) => (
-                          <th key={header} style={thStyle}>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {referencias.map((referencia, index) => (
-                        <tr key={referencia.id ?? referencia.reference_code} style={{ background: index % 2 === 0 ? WHITE : GRAY50 }}>
-                          <td style={{ padding: '12px 14px', color: NAVY, fontWeight: '600' }}>{referencia.reference_code}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.nombre ?? '-'}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.tipo_prenda ?? '-'}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.color ?? '-'}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.talla ?? '-'}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.precio !== null && referencia.precio !== undefined ? `$${referencia.precio.toLocaleString()}` : '-'}</td>
-                          <td style={{ padding: '12px 14px', color: GRAY600 }}>{referencia.temporada ?? '-'}</td>
                         </tr>
                       ))}
                     </tbody>
