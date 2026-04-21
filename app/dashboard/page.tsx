@@ -85,6 +85,7 @@ function getSectionSubtitle(section: string) {
 export default function Dashboard() {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [analisis, setAnalisis] = useState('')
+  const [analisisError, setAnalisisError] = useState('')
   const [loadingIA, setLoadingIA] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [seccion, setSeccion] = useState<(typeof navItems)[number]['id']>('dashboard')
@@ -94,6 +95,7 @@ export default function Dashboard() {
   const [commitLoading, setCommitLoading] = useState(false)
   const [importMessage, setImportMessage] = useState('')
   const [importError, setImportError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -116,6 +118,7 @@ export default function Dashboard() {
   const analizarConIA = async () => {
     setLoadingIA(true)
     setAnalisis('')
+    setAnalisisError('')
 
     try {
       const resumen = ventas
@@ -126,10 +129,57 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ventas: resumen }),
       })
-      const data = await res.json()
+      const raw = await res.text()
+      let data: { resultado?: string; error?: string } = {}
+      try {
+        data = raw ? JSON.parse(raw) : {}
+      } catch {
+        throw new Error(raw || `Respuesta inválida del servidor (${res.status}).`)
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status} al analizar con Claude.`)
+      }
       setAnalisis(data.resultado ?? '')
+    } catch (err) {
+      setAnalisisError(err instanceof Error ? err.message : 'Error desconocido al analizar con Claude.')
     } finally {
       setLoadingIA(false)
+    }
+  }
+
+  const eliminarConversacion = () => {
+    setAnalisis('')
+    setAnalisisError('')
+  }
+
+  const eliminarVentas = async () => {
+    if (ventas.length === 0) return
+    const confirmar = window.confirm(
+      `¿Eliminar las ${ventas.length} ventas importadas? Esta acción no se puede deshacer.`
+    )
+    if (!confirmar) return
+
+    setDeleteLoading(true)
+    setImportMessage('')
+    setImportError('')
+
+    try {
+      const token = await getAccessToken()
+      const res = await fetch('/api/ventas/delete', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error ?? 'No fue posible eliminar las ventas.')
+      }
+      setImportMessage(`${data.deleted} ventas eliminadas.`)
+      resetImportState()
+      await cargarVentas()
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'No fue posible eliminar las ventas.')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -420,9 +470,24 @@ export default function Dashboard() {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {seccion === 'ventas' && (
-              <button onClick={() => fileInputRef.current?.click()} style={btnPrimary}>
-                + Importar Excel
-              </button>
+              <>
+                <button onClick={() => fileInputRef.current?.click()} style={btnPrimary}>
+                  + Importar Excel
+                </button>
+                <button
+                  onClick={eliminarVentas}
+                  disabled={deleteLoading || ventas.length === 0}
+                  style={{
+                    ...btnPrimary,
+                    background: ventas.length === 0 ? GRAY100 : ACCENT,
+                    color: ventas.length === 0 ? GRAY400 : WHITE,
+                    cursor: deleteLoading || ventas.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: deleteLoading ? 0.6 : 1,
+                  }}
+                >
+                  {deleteLoading ? 'Eliminando...' : 'Eliminar ventas'}
+                </button>
+              </>
             )}
 
             <div
@@ -767,21 +832,54 @@ export default function Dashboard() {
               <div style={{ fontSize: '13px', color: GRAY400, marginBottom: '1.25rem', paddingLeft: '38px' }}>
                 Claude analiza tus ventas y te recomienda qué producir más, qué descontinuar y qué tendencias aprovechar.
               </div>
-              <button
-                onClick={analizarConIA}
-                disabled={loadingIA || ventas.length === 0}
-                style={{
-                  ...btnPrimary,
-                  background: ventas.length === 0 ? GRAY100 : NAVY,
-                  color: ventas.length === 0 ? GRAY400 : WHITE,
-                  padding: '12px 28px',
-                  cursor: ventas.length === 0 ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {loadingIA ? 'Analizando...' : 'Analizar con Claude'}
-              </button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={analizarConIA}
+                  disabled={loadingIA || ventas.length === 0}
+                  style={{
+                    ...btnPrimary,
+                    background: ventas.length === 0 ? GRAY100 : NAVY,
+                    color: ventas.length === 0 ? GRAY400 : WHITE,
+                    padding: '12px 28px',
+                    cursor: ventas.length === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {loadingIA ? 'Analizando...' : 'Analizar con Claude'}
+                </button>
+                {(analisis || analisisError) && (
+                  <button
+                    onClick={eliminarConversacion}
+                    disabled={loadingIA}
+                    style={{
+                      ...btnPrimary,
+                      background: ACCENT,
+                      color: WHITE,
+                      padding: '12px 28px',
+                      cursor: loadingIA ? 'not-allowed' : 'pointer',
+                      opacity: loadingIA ? 0.6 : 1,
+                    }}
+                  >
+                    Eliminar conversación
+                  </button>
+                )}
+              </div>
               {ventas.length === 0 && <p style={{ fontSize: '12px', color: GRAY400, marginTop: '8px' }}>Registra al menos una venta primero.</p>}
             </div>
+
+            {analisisError && (
+              <div style={{
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                borderRadius: '14px',
+                padding: '1rem 1.25rem',
+                marginBottom: '1rem',
+                fontSize: '13px',
+                color: '#fca5a5',
+                whiteSpace: 'pre-wrap',
+              }}>
+                {analisisError}
+              </div>
+            )}
 
             {analisis && (
               <div style={{
