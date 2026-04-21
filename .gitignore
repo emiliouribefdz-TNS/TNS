@@ -34,6 +34,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# datos reales de la empresa — no versionar
+Libro2.xlsx
+
 # vercel
 .vercel
 
