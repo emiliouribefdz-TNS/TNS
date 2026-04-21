@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 4096,
       messages: [
         {
           role: 'user',
@@ -20,10 +20,13 @@ Reglas para interpretar los datos:
 - Cantidades y ventas pueden ser negativas: representan devoluciones, que son parte normal de la operación de retail. Úsalas tal cual para calcular el neto. NO las ignores, NO las marques como errores, NO las corrijas.
 - La suma ya está neta (ventas menos devoluciones).
 
-Con base en estas ventas, entrega recomendaciones específicas y accionables sobre:
-1) Qué líneas/tipos/referencias producir más.
-2) Qué líneas/tipos/referencias reducir o descontinuar (considerando también la tasa de devoluciones).
-3) Qué productos nuevos o variantes introducir según las tendencias que veas.
+Estructura OBLIGATORIA de la respuesta. Debes entregar SIEMPRE las tres secciones completas, en este orden, aunque debas resumir cada una:
+
+1) ¿Qué líneas y referencias PRODUCIR MÁS? — identifica las líneas/tipos/referencias con mejor desempeño y justifica con cifras.
+2) ¿Qué líneas y referencias PRODUCIR MENOS o DESCONTINUAR? — identifica lo que NO está funcionando: bajas ventas, márgenes débiles, alta tasa de devoluciones, rotación lenta. Sé explícito: nombra las líneas, tipos y referencias con peor desempeño y di por qué. Nunca omitas esta sección.
+3) ¿Qué productos nuevos o variantes INTRODUCIR? — sugiere variantes o líneas nuevas basadas en las tendencias que veas en los datos.
+
+Para cada sección incluye: justificación con números concretos (unidades, COP, %) y acciones específicas.
 
 Sé concreto, directo y usa los datos que te paso para justificar cada recomendación.
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, CSSProperties, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, CSSProperties, ReactNode, useEffect, useRef, useState } from 'react'
 import { createClient, User } from '@supabase/supabase-js'
 import type { VentaImportPreview } from '@/lib/ventas'
 
@@ -95,6 +95,220 @@ function groupSum<T>(items: T[], key: (item: T) => string, value: (item: T) => n
   return Array.from(map.entries())
     .map(([nombre, total]) => ({ nombre, total }))
     .sort((a, b) => b.total - a.total)
+}
+
+const EMOJI_REGEX = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F000}-\u{1F2FF}\uFE0F]/gu
+
+function stripSymbols(text: string) {
+  return text.replace(EMOJI_REGEX, '').replace(/\s+/g, ' ').trim()
+}
+
+function renderInline(text: string, keyPrefix: string): ReactNode[] {
+  const cleaned = text.replace(EMOJI_REGEX, '')
+  const parts: ReactNode[] = []
+  const regex = /\*\*([^*]+)\*\*/g
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  let idx = 0
+  while ((match = regex.exec(cleaned)) !== null) {
+    if (match.index > lastIndex) parts.push(cleaned.slice(lastIndex, match.index))
+    parts.push(
+      <strong key={`${keyPrefix}-b-${idx++}`} style={{ color: WHITE, fontWeight: 600 }}>
+        {match[1]}
+      </strong>
+    )
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < cleaned.length) parts.push(cleaned.slice(lastIndex))
+  return parts
+}
+
+function AnalysisRenderer({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const blocks: ReactNode[] = []
+  let i = 0
+  let key = 0
+
+  while (i < lines.length) {
+    const raw = lines[i]
+    const trimmed = raw.trim()
+
+    if (!trimmed) { i++; continue }
+
+    if (/^-{3,}$/.test(trimmed)) {
+      blocks.push(
+        <hr key={key++} style={{ border: 'none', borderTop: '1px solid rgba(201,168,76,0.18)', margin: '24px 0' }} />
+      )
+      i++
+      continue
+    }
+
+    const heading = trimmed.match(/^(#{1,4})\s+(.*)$/)
+    if (heading) {
+      const level = heading[1].length
+      const content = stripSymbols(heading[2])
+      if (!content) { i++; continue }
+
+      if (level === 1) {
+        blocks.push(
+          <h2 key={key++} style={{
+            fontSize: '22px',
+            fontWeight: 700,
+            color: WHITE,
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.3px',
+            lineHeight: 1.3,
+          }}>
+            {renderInline(content, `h1-${key}`)}
+          </h2>
+        )
+      } else if (level === 2) {
+        blocks.push(
+          <h3 key={key++} style={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: GOLD,
+            textTransform: 'uppercase',
+            letterSpacing: '1.2px',
+            margin: '28px 0 14px 0',
+            paddingBottom: '8px',
+            borderBottom: '1px solid rgba(201,168,76,0.2)',
+          }}>
+            {renderInline(content, `h2-${key}`)}
+          </h3>
+        )
+      } else {
+        blocks.push(
+          <h4 key={key++} style={{
+            fontSize: '15px',
+            fontWeight: 600,
+            color: WHITE,
+            margin: '20px 0 10px 0',
+            lineHeight: 1.4,
+          }}>
+            {renderInline(content, `h3-${key}`)}
+          </h4>
+        )
+      }
+      i++
+      continue
+    }
+
+    if (trimmed.startsWith('|')) {
+      const rows: string[][] = []
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        const cells = lines[i].trim().split('|').slice(1, -1).map(c => c.trim())
+        const isSeparator = cells.length > 0 && cells.every(c => /^:?-+:?$/.test(c) || c === '')
+        if (!isSeparator) rows.push(cells)
+        i++
+      }
+      if (rows.length > 0) {
+        const [header, ...body] = rows
+        blocks.push(
+          <div key={key++} style={{ margin: '14px 0 20px 0', overflowX: 'auto' }}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '13px',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '8px',
+              overflow: 'hidden',
+            }}>
+              <thead>
+                <tr>
+                  {header.map((cell, idx) => (
+                    <th key={idx} style={{
+                      textAlign: 'left',
+                      padding: '10px 14px',
+                      background: 'rgba(201,168,76,0.12)',
+                      color: GOLD,
+                      fontWeight: 600,
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.6px',
+                      borderBottom: '1px solid rgba(201,168,76,0.3)',
+                    }}>{renderInline(cell, `th-${idx}`)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {body.map((row, rIdx) => (
+                  <tr key={rIdx}>
+                    {row.map((cell, cIdx) => (
+                      <td key={cIdx} style={{
+                        padding: '10px 14px',
+                        color: 'rgba(255,255,255,0.92)',
+                        borderBottom: rIdx === body.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                      }}>{renderInline(cell, `td-${rIdx}-${cIdx}`)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+      continue
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      const items: string[] = []
+      while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^[-*]\s+/, ''))
+        i++
+      }
+      blocks.push(
+        <ul key={key++} style={{ margin: '4px 0 16px 0', padding: 0, listStyle: 'none' }}>
+          {items.map((item, idx) => (
+            <li key={idx} style={{
+              position: 'relative',
+              paddingLeft: '20px',
+              marginBottom: '8px',
+              fontSize: '14px',
+              lineHeight: 1.7,
+              color: 'rgba(255,255,255,0.9)',
+            }}>
+              <span style={{
+                position: 'absolute',
+                left: 4,
+                top: 11,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: GOLD,
+              }} />
+              {renderInline(item, `li-${idx}`)}
+            </li>
+          ))}
+        </ul>
+      )
+      continue
+    }
+
+    const paragraphLines: string[] = [trimmed]
+    i++
+    while (i < lines.length) {
+      const next = lines[i].trim()
+      if (!next) break
+      if (/^(#{1,4}\s|-\s|\*\s|\||-{3,}$)/.test(next)) break
+      paragraphLines.push(next)
+      i++
+    }
+    const joined = paragraphLines.join(' ')
+    const isBoldLabel = /^\*\*[^*]+\*\*:?$/.test(joined.trim())
+    blocks.push(
+      <p key={key++} style={{
+        margin: isBoldLabel ? '14px 0 6px 0' : '10px 0',
+        fontSize: '14px',
+        lineHeight: 1.7,
+        color: 'rgba(255,255,255,0.88)',
+      }}>
+        {renderInline(joined, `p-${key}`)}
+      </p>
+    )
+  }
+
+  return <>{blocks}</>
 }
 
 export default function Dashboard() {
@@ -959,7 +1173,9 @@ export default function Dashboard() {
                 }}>
                   Análisis de Claude
                 </div>
-                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>{analisis}</div>
+                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.7 }}>
+                  <AnalysisRenderer text={analisis} />
+                </div>
               </div>
             )}
           </div>
