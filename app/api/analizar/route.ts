@@ -13,7 +13,22 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Eres un experto en moda y análisis de ventas. Analiza estas ventas de una empresa de moda colombiana y dame recomendaciones específicas sobre: 1) Qué prendas producir más, 2) Qué prendas reducir o descontinuar, 3) Qué prendas nuevas incluir basándote en tendencias actuales. Sé concreto y directo.\n\nVentas:\n${ventas}`,
+          content: `Eres un experto en moda y análisis de ventas para una empresa colombiana (marca TENNIS).
+
+Reglas para interpretar los datos:
+- Todos los valores monetarios están en pesos colombianos (COP). El formato usa coma como separador de miles: "299,900 COP" equivale a doscientos noventa y nueve mil novecientos pesos. No los confundas con decimales ni los redondees a miles.
+- Cantidades y ventas pueden ser negativas: representan devoluciones, que son parte normal de la operación de retail. Úsalas tal cual para calcular el neto. NO las ignores, NO las marques como errores, NO las corrijas.
+- La suma ya está neta (ventas menos devoluciones).
+
+Con base en estas ventas, entrega recomendaciones específicas y accionables sobre:
+1) Qué líneas/tipos/referencias producir más.
+2) Qué líneas/tipos/referencias reducir o descontinuar (considerando también la tasa de devoluciones).
+3) Qué productos nuevos o variantes introducir según las tendencias que veas.
+
+Sé concreto, directo y usa los datos que te paso para justificar cada recomendación.
+
+Datos de ventas:
+${ventas}`,
         },
       ],
     })

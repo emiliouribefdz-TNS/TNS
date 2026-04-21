@@ -2,12 +2,14 @@ import * as XLSX from 'xlsx'
 
 export type VentaImportRow = {
   rowNumber: number
-  tipo_prenda: string
-  color: string | null
-  talla: string | null
+  mes: string
+  marca: string
+  genero: string
+  linea: string
+  tipo_producto: string
+  referencia: string
   unidades: number
-  precio: number
-  temporada: string | null
+  venta_total: number
 }
 
 export type VentaImportError = {
@@ -24,42 +26,57 @@ export type VentaImportPreview = {
     totalRows: number
     validRows: number
     invalidRows: number
+    totalUnidades: number
+    totalVenta: number
   }
 }
 
 const FIELD_ALIASES: Record<string, keyof VentaImportRow> = {
-  tipoprenda: 'tipo_prenda',
-  tipo: 'tipo_prenda',
-  prenda: 'tipo_prenda',
-  categoria: 'tipo_prenda',
-  producto: 'tipo_prenda',
-  garment: 'tipo_prenda',
-  item: 'tipo_prenda',
-  referencia: 'tipo_prenda',
-  nombre: 'tipo_prenda',
-  color: 'color',
-  talla: 'talla',
-  size: 'talla',
-  talle: 'talla',
+  mes: 'mes',
+  mesdelano: 'mes',
+  mesdelanio: 'mes',
+  month: 'mes',
+  marca: 'marca',
+  marcadeproducto: 'marca',
+  brand: 'marca',
+  genero: 'genero',
+  clasegenero: 'genero',
+  gender: 'genero',
+  linea: 'linea',
+  claselinea: 'linea',
+  line: 'linea',
+  tipo: 'tipo_producto',
+  tipoproducto: 'tipo_producto',
+  tipodeproducto: 'tipo_producto',
+  tipoprenda: 'tipo_producto',
+  clasetipo: 'tipo_producto',
+  producttype: 'tipo_producto',
+  referencia: 'referencia',
+  referenciaproducto: 'referencia',
+  ref: 'referencia',
+  reference: 'referencia',
+  codigo: 'referencia',
+  sku: 'referencia',
   unidades: 'unidades',
+  ventaunds: 'unidades',
+  ventaunidades: 'unidades',
+  unds: 'unidades',
   cantidad: 'unidades',
-  qty: 'unidades',
-  quantity: 'unidades',
   units: 'unidades',
-  und: 'unidades',
-  precio: 'precio',
-  precioventa: 'precio',
-  valor: 'precio',
-  price: 'precio',
-  preciounidad: 'precio',
-  preciounitario: 'precio',
-  temporada: 'temporada',
-  coleccion: 'temporada',
-  season: 'temporada',
-  collection: 'temporada',
+  ventatotal: 'venta_total',
+  venta: 'venta_total',
+  ventas: 'venta_total',
+  total: 'venta_total',
+  ventapesos: 'venta_total',
+  ventacop: 'venta_total',
+  monto: 'venta_total',
+  importe: 'venta_total',
+  valor: 'venta_total',
 }
 
 const SUPPORTED_EXTENSIONS = new Set(['xlsx', 'csv'])
+
+const TEXT_FIELDS: (keyof VentaImportRow)[] = ['mes', 'marca', 'genero', 'linea', 'tipo_producto', 'referencia']
 
 function normalizeHeader(value: string) {
   return value
@@ -70,18 +87,33 @@ function normalizeHeader(value: string) {
     .replace(/[^a-z0-9]+/g, '')
 }
 
-function toNullableString(value: unknown) {
-  if (value === null || value === undefined) return null
-  const text = String(value).trim()
-  return text || null
+function toText(value: unknown) {
+  if (value === null || value === undefined) return ''
+  return String(value).trim()
 }
 
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  const normalized = String(value).replace(/[^\d,.-]/g, '').replace(/\.(?=.*\.)/g, '').replace(',', '.')
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : null
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (typeof value !== 'string') return null
+  let s = value.trim()
+  if (!s) return null
+  const parenNegative = /^\(.*\)$/.test(s)
+  if (parenNegative) s = s.slice(1, -1)
+  s = s.replace(/[^\d.,\-]/g, '')
+  const lastDot = s.lastIndexOf('.')
+  const lastComma = s.lastIndexOf(',')
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastDot > lastComma) s = s.replace(/,/g, '')
+    else s = s.replace(/\./g, '').replace(',', '.')
+  } else if (lastComma > -1) {
+    const parts = s.split(',')
+    const allThousand = parts.length > 1 && parts.slice(1).every((p) => p.length === 3)
+    s = allThousand ? s.replace(/,/g, '') : s.replace(',', '.')
+  }
+  const parsed = Number(s)
+  if (!Number.isFinite(parsed)) return null
+  return parenNegative ? -parsed : parsed
 }
 
 function parseWorkbook(fileName: string, buffer: Uint8Array) {
@@ -115,43 +147,51 @@ export function parseVentasImportFile(fileName: string, buffer: Uint8Array): Ven
   const sheet = workbook.Sheets[firstSheetName]
   const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: '',
-    raw: false,
+    raw: true,
   })
 
   const columnsDetected = rawRows[0] ? Object.keys(rawRows[0]) : []
   const rows: VentaImportRow[] = []
   const errors: VentaImportError[] = []
+  let totalUnidades = 0
+  let totalVenta = 0
 
   rawRows.forEach((rawRow, index) => {
     const rowNumber = index + 2
-    const tipoPrenda = toNullableString(getMappedValue(rawRow, 'tipo_prenda'))
+    const referencia = toText(getMappedValue(rawRow, 'referencia'))
     const unidades = toNumber(getMappedValue(rawRow, 'unidades'))
-    const precio = toNumber(getMappedValue(rawRow, 'precio'))
+    const ventaTotal = toNumber(getMappedValue(rawRow, 'venta_total'))
 
-    if (!tipoPrenda) {
-      errors.push({ rowNumber, message: 'Falta el tipo de prenda (columna obligatoria).' })
+    if (!referencia) {
+      errors.push({ rowNumber, message: 'Falta la referencia del producto (columna obligatoria).' })
       return
     }
 
-    if (unidades === null || unidades <= 0) {
-      errors.push({ rowNumber, message: `Fila "${tipoPrenda}": las unidades deben ser un número mayor a 0.` })
+    if (unidades === null || !Number.isFinite(unidades)) {
+      errors.push({ rowNumber, message: `Ref. ${referencia}: las unidades deben ser un número.` })
       return
     }
 
-    if (precio === null || precio <= 0) {
-      errors.push({ rowNumber, message: `Fila "${tipoPrenda}": el precio debe ser un número mayor a 0.` })
+    if (ventaTotal === null || !Number.isFinite(ventaTotal)) {
+      errors.push({ rowNumber, message: `Ref. ${referencia}: la venta total debe ser un número.` })
       return
     }
 
-    rows.push({
+    const row: VentaImportRow = {
       rowNumber,
-      tipo_prenda: tipoPrenda,
-      color: toNullableString(getMappedValue(rawRow, 'color')),
-      talla: toNullableString(getMappedValue(rawRow, 'talla')),
+      mes: toText(getMappedValue(rawRow, 'mes')),
+      marca: toText(getMappedValue(rawRow, 'marca')),
+      genero: toText(getMappedValue(rawRow, 'genero')),
+      linea: toText(getMappedValue(rawRow, 'linea')),
+      tipo_producto: toText(getMappedValue(rawRow, 'tipo_producto')),
+      referencia,
       unidades: Math.round(unidades),
-      precio,
-      temporada: toNullableString(getMappedValue(rawRow, 'temporada')),
-    })
+      venta_total: ventaTotal,
+    }
+
+    rows.push(row)
+    totalUnidades += row.unidades
+    totalVenta += row.venta_total
   })
 
   return {
@@ -163,6 +203,8 @@ export function parseVentasImportFile(fileName: string, buffer: Uint8Array): Ven
       totalRows: rawRows.length,
       validRows: rows.length,
       invalidRows: errors.length,
+      totalUnidades,
+      totalVenta,
     },
   }
 }
@@ -178,31 +220,40 @@ export function sanitizeVentaCommitRows(payload: unknown): VentaImportRow[] {
     }
 
     const candidate = row as Partial<VentaImportRow>
-    const tipoPrenda = toNullableString(candidate.tipo_prenda)
+    const referencia = toText(candidate.referencia)
 
-    if (!tipoPrenda) {
-      throw new Error(`La fila ${index + 1} no tiene tipo_prenda.`)
+    if (!referencia) {
+      throw new Error(`La fila ${index + 1} no tiene referencia.`)
     }
 
     const unidades = toNumber(candidate.unidades)
-    const precio = toNumber(candidate.precio)
+    const ventaTotal = toNumber(candidate.venta_total)
 
-    if (unidades === null || unidades <= 0) {
+    if (unidades === null || !Number.isFinite(unidades)) {
       throw new Error(`La fila ${index + 1} tiene unidades inválidas.`)
     }
 
-    if (precio === null || precio <= 0) {
-      throw new Error(`La fila ${index + 1} tiene precio inválido.`)
+    if (ventaTotal === null || !Number.isFinite(ventaTotal)) {
+      throw new Error(`La fila ${index + 1} tiene venta total inválida.`)
     }
 
-    return {
+    const output: VentaImportRow = {
       rowNumber: Number.isFinite(candidate.rowNumber) ? Number(candidate.rowNumber) : index + 2,
-      tipo_prenda: tipoPrenda,
-      color: toNullableString(candidate.color),
-      talla: toNullableString(candidate.talla),
+      mes: '',
+      marca: '',
+      genero: '',
+      linea: '',
+      tipo_producto: '',
+      referencia,
       unidades: Math.round(unidades),
-      precio,
-      temporada: toNullableString(candidate.temporada),
+      venta_total: ventaTotal,
     }
+
+    for (const field of TEXT_FIELDS) {
+      if (field === 'referencia') continue
+      output[field] = toText(candidate[field]) as never
+    }
+
+    return output
   })
 }

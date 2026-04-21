@@ -16,12 +16,14 @@ export async function POST(req: NextRequest) {
 
     const rowsToInsert = rows.map((row) => ({
       empresa: user.email,
-      tipo_prenda: row.tipo_prenda,
-      color: row.color ?? '',
-      talla: row.talla ?? '',
+      mes: row.mes,
+      marca: row.marca,
+      genero: row.genero,
+      linea: row.linea,
+      tipo_producto: row.tipo_producto,
+      referencia: row.referencia,
       unidades: row.unidades,
-      precio: row.precio,
-      temporada: row.temporada ?? '',
+      venta_total: row.venta_total,
     }))
 
     const { error: insertError } = await supabase
